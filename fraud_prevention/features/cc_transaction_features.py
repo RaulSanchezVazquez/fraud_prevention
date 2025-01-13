@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import os
+
+import pandas as pd
 from geopy.distance import geodesic
 from multiprocess import cpu_count
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
 from fraud_prevention import config
+from fraud_prevention.features import creditcard
 
 
 PATH = os.path.join(
     config.PRJ_DIR,
     'data/processed/cc_transaction_features.parquet')
-
-
 
 # Aux. variable to async computation
 DATA_GRP = None
@@ -112,7 +114,18 @@ def geo_distance_diff(geo1, geo2):
 
 
 def process_cc_features(cc_number):
-    """
+    """Process the features of a single credit card.
+
+    Parameters
+    ----------
+    cc_number : int
+        The credit card number.
+
+    Return
+    ------
+    cc_transaction_features : pandas.DataFrame
+        The data with the transaction features.
+
     """
     global DATA_GRP
 
@@ -168,9 +181,11 @@ def process_cc_features(cc_number):
 
 
 
-def process(data):
+def process():
+    """Process the credit card features.
     """
-    """
+
+    data = creditcard.get()
 
     cc_numbers = data['credit_card_number'].value_counts().index
     DATA_GRP = data.groupby('credit_card_number')
@@ -181,4 +196,28 @@ def process(data):
         verbose=True)
 
     trasaction_features = pd.concat(trasaction_features, axis=0)
+    trasaction_features.reset_index(inplace=True)
 
+    dataset = data.reset_index().merge(
+        trasaction_features,
+        how='left',
+        on=['index'])
+
+    dataset.to_parquet(PATH)
+
+
+def get():
+    """Get the dataset.
+
+    Returns
+    --------
+    data : pandas.DataFrame
+        The data.
+    """
+
+    data = pd.read_parquet(PATH)
+
+    data['latitude'] = data['latitude'].astype(float)
+    data['longitude'] = data['longitude'].astype(float)
+
+    return data

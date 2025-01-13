@@ -33,6 +33,8 @@ def get():
         4   2.0 -1.158233  0.877737  1.548718  ...  0.219422  69.99       0
 
         [5 rows x 31 columns]
+
+        data.shape
     """
     data = pd.read_csv(
         os.path.join(config.PRJ_DIR, 'data/external/creditcard.csv')
