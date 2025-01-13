@@ -154,7 +154,7 @@ def get_synthetic_fraud(data, max_group_size=7):
 
         if local_group_size >= group_size:
             local_group_size = 0
-            group_size = random.choice(range(2, max_group_size + 1))
+            group_size = random.choice(range(3, max_group_size + 1))
 
         # Create credit card number
         if local_group_size == 0:
