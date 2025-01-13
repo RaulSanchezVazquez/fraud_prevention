@@ -44,6 +44,21 @@ FRAUDSTERS_TIME_DISTANCE_MIN = [0.5, 1, 1.5, 2, 2.5, 5, 10]
 NON_FRAUDSTERS_TIME_DISTANCE_MIN = [10, 30, 60]
 
 
+NON_FRAUDSTERS_MERCHANTS = [
+    'gas_station_1',
+    'gas_station_2',
+    'restaurant_1',
+    'restaurant_2',
+    'store_1',
+    'store_2',
+    'fligh_tickets']
+
+FRAUDSTERS_MERCHANTS = (
+    NON_FRAUDSTERS_MERCHANTS
+) + (['store_2'] * 10) + (['restaurant_2'] * 10) + (['fligh_tickets'] * 30)
+
+
+
 def get():
     """Get the dataset.
 
@@ -62,40 +77,41 @@ def get():
         data.iloc[0]
 
         Out[1]:
-        credit_card_number    6598515202982270
-        latitude                      34.63915
-        longitude                   -120.45794
-        timestamp                          0.0
-        V1                           -1.359807
-        V2                           -0.072781
-        V3                            2.536347
-        V4                            1.378155
-        V5                           -0.338321
-        V6                            0.462388
-        V7                            0.239599
-        V8                            0.098698
-        V9                            0.363787
-        V10                           0.090794
-        V11                            -0.5516
-        V12                          -0.617801
-        V13                           -0.99139
-        V14                          -0.311169
-        V15                           1.468177
-        V16                          -0.470401
-        V17                           0.207971
-        V18                           0.025791
-        V19                           0.403993
-        V20                           0.251412
-        V21                          -0.018307
-        V22                           0.277838
-        V23                          -0.110474
-        V24                           0.066928
-        V25                           0.128539
-        V26                          -0.189115
-        V27                           0.133558
-        V28                          -0.021053
-        Amount                          149.62
-        Class                                0
+        credit_card_number    346024495269014
+        latitude                     41.72059
+        longitude                   -87.70172
+        timestamp                         0.0
+        merchant                 restaurant_1
+        V1                          -1.359807
+        V2                          -0.072781
+        V3                           2.536347
+        V4                           1.378155
+        V5                          -0.338321
+        V6                           0.462388
+        V7                           0.239599
+        V8                           0.098698
+        V9                           0.363787
+        V10                          0.090794
+        V11                           -0.5516
+        V12                         -0.617801
+        V13                          -0.99139
+        V14                         -0.311169
+        V15                          1.468177
+        V16                         -0.470401
+        V17                          0.207971
+        V18                          0.025791
+        V19                          0.403993
+        V20                          0.251412
+        V21                         -0.018307
+        V22                          0.277838
+        V23                         -0.110474
+        V24                          0.066928
+        V25                          0.128539
+        V26                         -0.189115
+        V27                          0.133558
+        V28                         -0.021053
+        Amount                         149.62
+        Class                               0
         Name: 0, dtype: object
 
     """
@@ -164,9 +180,11 @@ def get_synthetic_fraud(data, max_group_size=7):
         if is_fraud:
             timestamp_delta = random.choice(FRAUDSTERS_TIME_DISTANCE_MIN)
             country_code = random.choice(FRAUDSTERS_LOCATION)
+            merchant = random.choice(FRAUDSTERS_MERCHANTS)
         else:
             timestamp_delta = random.choice(NON_FRAUDSTERS_TIME_DISTANCE_MIN)
             country_code = random.choice(NON_FRAUDSTERS_LOCATION)
+            merchant = random.choice(NON_FRAUDSTERS_MERCHANTS)
 
         if local_group_size == 0:
             timestamp = row['Time']
@@ -182,7 +200,8 @@ def get_synthetic_fraud(data, max_group_size=7):
             "credit_card_number": credit_card_number,
             "latitude": lat,
             "longitude": lon,
-            "timestamp": timestamp
+            "timestamp": timestamp,
+            "merchant": merchant
         })
 
         local_group_size += 1

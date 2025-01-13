@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 import os
 
-import pandas as pd
-from geopy.distance import geodesic
-from multiprocess import cpu_count
-from joblib import Parallel, delayed
+import numpy as np
 from tqdm import tqdm
+import pandas as pd
+from multiprocess import cpu_count
+from geopy.distance import geodesic
+from joblib import Parallel, delayed
+from category_encoders.woe import WOEEncoder
 
 from fraud_prevention import config
 from fraud_prevention.features import creditcard
@@ -182,6 +184,70 @@ def process_cc_features(cc_number):
     return cc_transaction_features
 
 
+def get_merchant_charback_woe(data, window_size=500):
+    """Get the merchant charback weight of evidence.
+
+    The charback rate weight of evidence is computed per time window.
+
+    To prevent the model to be fitted use the valid window.
+
+    Parameters
+    -----------
+    data : pandas.DataFrame
+        The data.
+    window_size : int
+        The time window size.
+
+    Returns
+    -------
+    merchant_chargeback_woe : pandas.DataFrame
+        The merchants chargeback weight of evidence at a give timestamp.
+    """
+
+    timestamps = data[
+        'timestamp'
+    ].apply(
+        lambda x: x - (x % window_size)
+    ).sort_values().drop_duplicates()
+
+    merchant_chargeback_woe, pbar = [], tqdm(total=len(timestamps))
+    for time in timestamps:
+        time_data = data[data['timestamp'] < time]
+
+        if time_data['Class'].sum() < 10:
+            continue
+
+        encoder = WOEEncoder(
+            cols=['merchant']
+        ).fit(
+            time_data['merchant'],
+            time_data['Class'])
+
+        merchant_encoder = encoder.mapping['merchant']
+        weights = pd.Series(
+            merchant_encoder.values,
+            index=encoder.ordinal_encoder.inverse_transform(
+                pd.DataFrame(
+                    {
+                        "merchant": merchant_encoder.index
+                    }
+                )
+            )['merchant'].tolist()
+        ).sort_values().to_dict()
+        weights['timestamp'] = time
+        merchant_chargeback_woe.append(weights)
+        pbar.update(1)
+
+    merchant_chargeback_woe = pd.DataFrame(
+        merchant_chargeback_woe
+    ).set_index('timestamp')
+
+    merchant_chargeback_woe = merchant_chargeback_woe.T
+    merchant_chargeback_woe[None] = np.nan
+    merchant_chargeback_woe = merchant_chargeback_woe.T
+
+    return merchant_chargeback_woe
+
 
 def process():
     """Process the credit card features.
@@ -193,6 +259,7 @@ def process():
     cc_numbers = data['credit_card_number'].value_counts().index
     DATA_GRP = data.groupby('credit_card_number')
 
+    # Add transactional features
     trasaction_features = apply_threading(
         func=process_cc_features,
         data=cc_numbers,
@@ -205,6 +272,34 @@ def process():
         trasaction_features,
         how='left',
         on=['index'])
+
+    # Add temporal features
+    merchant_chargeback_woe = get_merchant_charback_woe(
+        data,
+        window_size=500)
+
+    # Get the valid WOE closest to the timestamp
+    woe_valid_idx = []
+    for t in dataset['timestamp']:
+        woe_not_feature_leak = (
+            merchant_chargeback_woe.index < t
+        ) # Ensure not doing feature leak
+
+        if woe_not_feature_leak.sum() == 0:
+            woe_valid_idx.append(None)
+        else:
+            woe_valid_idx.append(
+                merchant_chargeback_woe.index[
+                    woe_not_feature_leak
+                ].max()
+            )
+    dataset['merchant_chargeback_woe'] = [
+        woe[m]
+        for woe, m in zip(
+            merchant_chargeback_woe.loc[
+                pd.Series(woe_valid_idx)
+            ].to_dict('records'),
+            dataset['merchant'].tolist())]
 
     dataset.to_parquet(PATH)
 
