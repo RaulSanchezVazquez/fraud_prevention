@@ -38,10 +38,10 @@ FRAUDSTERS_LOCATION = [
     'CO',  # Colombia
     'CU',  # Cuba
     'EG',  # Egypt
-] + (['MX'] * 50) + (['US'] * 50) + (['CA'] * 50)
+] + (['MX'] * 10) + (['US'] * 10) + (['CA'] * 10)
 
-FRAUDSTERS_TIME_DISTANCE_MIN = [1, 1, 1, 1, 5, 5, 5, 10, 60]
-NON_FRAUDSTERS_TIME_DISTANCE_MIN = [1, 5, 10, 60]
+FRAUDSTERS_TIME_DISTANCE_MIN = [0.5, 1, 5, 10]
+NON_FRAUDSTERS_TIME_DISTANCE_MIN = [10, 30, 60]
 
 
 def get():
