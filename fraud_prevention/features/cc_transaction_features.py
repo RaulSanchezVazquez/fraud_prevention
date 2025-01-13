@@ -128,54 +128,56 @@ def process_cc_features(cc_number):
 
     """
     global DATA_GRP
+    try:
+        cc_data = DATA_GRP.get_group(cc_number)
+        cc_data.sort_values('timestamp', inplace=True)
 
-    cc_data = DATA_GRP.get_group(cc_number)
-    cc_data.sort_values('timestamp', inplace=True)
+        geo_pairs_index = zip(
+            cc_data[[
+                'latitude',
+                'longitude'
+            ]][:-1].values.tolist(),
+            cc_data[[
+                'latitude',
+                'longitude'
+            ]][1:].values.tolist(),
+            cc_data.index[1:])
 
-    geo_pairs_index = zip(
-        cc_data[[
-            'latitude',
-            'longitude'
-        ]][:-1].values.tolist(),
-        cc_data[[
-            'latitude',
-            'longitude'
-        ]][1:].values.tolist(),
-        cc_data.index[1:])
+        diff_geo = []
+        for prev_geo, current_geo, index in geo_pairs_index:
+            diff_geo.append({
+                "index": index,
+                "km_dist_prev_transaction": \
+                    geo_distance_diff(geo1=prev_geo, geo2=current_geo)
+            })
 
-    diff_geo = []
-    for prev_geo, current_geo, index in geo_pairs_index:
-        diff_geo.append({
-            "index": index,
-            "km_dist_prev_transaction": \
-                geo_distance_diff(geo1=prev_geo, geo2=current_geo)
-        })
+        time_pairs_index = zip(
+            cc_data[:-1].values.tolist(),
+            cc_data[1:].values.tolist(),
+            cc_data.index[1:])
 
-    time_pairs_index = zip(
-        geolocations[:-1].values.tolist(),
-        geolocations[1:].values.tolist(),
-        geolocations.index[1:])
+        time_pairs_index = zip(
+            cc_data[
+                'timestamp'
+            ][:-1].values.tolist(),
+            cc_data[
+                'timestamp'
+            ][1:].values.tolist(),
+            cc_data.index[1:])
 
-    time_pairs_index = zip(
-        cc_data[
-            'timestamp'
-        ][:-1].values.tolist(),
-        cc_data[
-            'timestamp'
-        ][1:].values.tolist(),
-        cc_data.index[1:])
+        diff_time = []
+        for prev_time, current_time, index in time_pairs_index:
+            diff_time.append({
+                "index": index,
+                "time_prev_transaction": (current_time - prev_time)
+            })
 
-    diff_time = []
-    for prev_time, current_time, index in time_pairs_index:
-        diff_time.append({
-            "index": index,
-            "time_prev_transaction": (current_time - prev_time)
-        })
-
-    cc_transaction_features = pd.concat([
-        pd.DataFrame(diff_time).set_index('index'),
-        pd.DataFrame(diff_geo).set_index('index')
-    ], axis=1)
+        cc_transaction_features = pd.concat([
+            pd.DataFrame(diff_time).set_index('index'),
+            pd.DataFrame(diff_geo).set_index('index')
+        ], axis=1)
+    except:
+        cc_transaction_features = pd.DataFrame()
 
     return cc_transaction_features
 
@@ -184,6 +186,7 @@ def process_cc_features(cc_number):
 def process():
     """Process the credit card features.
     """
+    global DATA_GRP
 
     data = creditcard.get()
 

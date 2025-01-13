@@ -38,9 +38,9 @@ FRAUDSTERS_LOCATION = [
     'CO',  # Colombia
     'CU',  # Cuba
     'EG',  # Egypt
-] + (['MX'] * 10) + (['US'] * 10) + (['CA'] * 10)
+] + (['MX'] * 5) + (['US'] * 5) + (['CA'] * 5)
 
-FRAUDSTERS_TIME_DISTANCE_MIN = [0.5, 1, 5, 10]
+FRAUDSTERS_TIME_DISTANCE_MIN = [0.5, 1, 1.5, 2, 2.5, 5, 10]
 NON_FRAUDSTERS_TIME_DISTANCE_MIN = [10, 30, 60]
 
 
@@ -60,60 +60,64 @@ def get():
 
         data = creditcard.get()
         data.iloc[0]
-        Out[1]:
 
-        redit_card_number    4116077007869887
-        latitude                      40.49748
-        longitude                      44.7662
-        timestamp                      41181.0
-        V1                           -7.334341
-        V2                            4.960892
-        V3                            -8.45141
-        V4                            8.174825
-        V5                           -7.237464
-        V6                           -2.382711
-        V7                          -11.508842
-        V8                            4.635798
-        V9                            -6.55776
-        V10                         -11.519861
-        V11                           6.455828
-        V12                         -13.380222
-        V13                           0.545279
-        V14                         -13.026864
-        V15                          -0.453595
-        V16                         -13.251542
-        V17                         -22.883999
-        V18                          -9.287832
-        V19                           4.038231
-        V20                           0.723314
-        V21                           2.153755
-        V22                           0.033922
-        V23                          -0.014095
-        V24                            0.62525
-        V25                           -0.05339
-        V26                           0.164709
-        V27                           1.411047
-        V28                           0.315645
-        Amount                           11.38
-        Class                                1
+        Out[1]:
+        credit_card_number    6598515202982270
+        latitude                      34.63915
+        longitude                   -120.45794
+        timestamp                          0.0
+        V1                           -1.359807
+        V2                           -0.072781
+        V3                            2.536347
+        V4                            1.378155
+        V5                           -0.338321
+        V6                            0.462388
+        V7                            0.239599
+        V8                            0.098698
+        V9                            0.363787
+        V10                           0.090794
+        V11                            -0.5516
+        V12                          -0.617801
+        V13                           -0.99139
+        V14                          -0.311169
+        V15                           1.468177
+        V16                          -0.470401
+        V17                           0.207971
+        V18                           0.025791
+        V19                           0.403993
+        V20                           0.251412
+        V21                          -0.018307
+        V22                           0.277838
+        V23                          -0.110474
+        V24                           0.066928
+        V25                           0.128539
+        V26                          -0.189115
+        V27                           0.133558
+        V28                          -0.021053
+        Amount                          149.62
+        Class                                0
+        Name: 0, dtype: object
 
     """
-    if os.path.exists(PATH):
-        data = pd.read_parquet(PATH)
-    else:
-        data = creditcard.get().sort_values('Class', ascending=False)
-        data_synthetic = get_synthetic_fraud(
-            data,
-            max_group_size=7)
-
-        data = pd.concat([
-            data_synthetic.reset_index(drop=True),
-            data.drop(['Time'], axis=1).reset_index(drop=True)
-        ], axis=1)
-
-        data.to_parquet(PATH)
+    data = pd.read_parquet(PATH)
 
     return data
+
+
+def process():
+    """Add synthetic data.
+    """
+    data = creditcard.get()
+    data_synthetic = get_synthetic_fraud(
+        data,
+        max_group_size=7)
+
+    data = pd.concat([
+        data_synthetic.reset_index(drop=True),
+        data.drop(['Time'], axis=1).reset_index(drop=True)
+    ], axis=1)
+
+    data.to_parquet(PATH)
 
 
 def get_synthetic_fraud(data, max_group_size=7):
@@ -147,6 +151,7 @@ def get_synthetic_fraud(data, max_group_size=7):
     pbar = tqdm(total=len(data))
     for _, row in data.iterrows():
         is_fraud = row['Class'] == 1
+
         if local_group_size >= group_size:
             local_group_size = 0
             group_size = random.choice(range(2, max_group_size + 1))
