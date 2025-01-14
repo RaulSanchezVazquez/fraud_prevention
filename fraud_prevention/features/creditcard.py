@@ -5,7 +5,6 @@ import random
 
 from tqdm import tqdm
 import pandas as pd
-import numpy as np
 from faker import Faker
 
 from fraud_prevention.data import creditcard
@@ -56,7 +55,6 @@ NON_FRAUDSTERS_MERCHANTS = [
 FRAUDSTERS_MERCHANTS = (
     NON_FRAUDSTERS_MERCHANTS
 ) + (['store_2'] * 10) + (['restaurant_2'] * 10) + (['fligh_tickets'] * 30)
-
 
 
 def get():

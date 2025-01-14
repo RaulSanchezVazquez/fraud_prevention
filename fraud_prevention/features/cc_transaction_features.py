@@ -134,6 +134,7 @@ def process_cc_features(cc_number):
         cc_data = DATA_GRP.get_group(cc_number)
         cc_data.sort_values('timestamp', inplace=True)
 
+        # Geolocation features
         geo_pairs_index = zip(
             cc_data[[
                 'latitude',
@@ -149,10 +150,12 @@ def process_cc_features(cc_number):
         for prev_geo, current_geo, index in geo_pairs_index:
             diff_geo.append({
                 "index": index,
-                "km_dist_prev_transaction": \
-                    geo_distance_diff(geo1=prev_geo, geo2=current_geo)
+                "km_dist_prev_transaction": geo_distance_diff(
+                    geo1=prev_geo,
+                    geo2=current_geo)
             })
 
+        # Transaction velocity features
         time_pairs_index = zip(
             cc_data[:-1].values.tolist(),
             cc_data[1:].values.tolist(),
@@ -174,11 +177,30 @@ def process_cc_features(cc_number):
                 "time_prev_transaction": (current_time - prev_time)
             })
 
+        # User behavior features
+        is_known_merchant, prev_merchants = [], []
+        for idx, m in cc_data['merchant'].to_dict().items():
+            if not (m in prev_merchants):
+                is_known = False
+            else:
+                is_known = True
+
+            is_known_merchant.append({
+                "index": idx,
+                "is_known_merchant": is_known,
+            })
+            prev_merchants.append(m)
+
+        # Features
         cc_transaction_features = pd.concat([
             pd.DataFrame(diff_time).set_index('index'),
-            pd.DataFrame(diff_geo).set_index('index')
+            pd.DataFrame(diff_geo).set_index('index'),
+            pd.DataFrame(is_known_merchant).set_index('index')
         ], axis=1)
-    except:
+
+    except Exception as err:
+        print(err)
+        print(f'cc_number: {cc_number}')
         cc_transaction_features = pd.DataFrame()
 
     return cc_transaction_features
@@ -283,7 +305,7 @@ def process():
     for t in dataset['timestamp']:
         woe_not_feature_leak = (
             merchant_chargeback_woe.index < t
-        ) # Ensure not doing feature leak
+        )  # Ensure not doing feature leak
 
         if woe_not_feature_leak.sum() == 0:
             woe_valid_idx.append(None)

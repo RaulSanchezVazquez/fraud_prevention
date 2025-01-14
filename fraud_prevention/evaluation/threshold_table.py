@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 
-def compute(y_true, y_score):
+def compute(y_true, y_score, weights):
     """Compute model score threshold table.
 
     Parameters
@@ -31,8 +28,6 @@ def compute(y_true, y_score):
 
     threshold_table = []
     for score in score_candidates_for_threshold:
-        # if score > .5:
-        #     break
         is_accepted = (y_score <= score)
         is_rejected = (y_score > score)
 
