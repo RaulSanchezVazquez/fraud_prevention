@@ -64,14 +64,14 @@ def get_model_candidates():
         ]),
         'xgb': Pipeline([
             ('model', XGBClassifier(
-                use_label_encoder=False, eval_metric='logloss'))
+                tree_method='hist', use_label_encoder=False))
         ]),
         'xgb_SMOTE': ImbPipeline([
             ('Imputer', SimpleImputer(
                 missing_values=np.nan, strategy='constant', fill_value=0)),
             ('SMOTE', SMOTE(sampling_strategy='minority')),
             ('model', XGBClassifier(
-                use_label_encoder=False, eval_metric='logloss'))
+                tree_method='hist', use_label_encoder=False))
         ]),
         'lightgbm': Pipeline([
             ('model', LGBMClassifier(
